@@ -1,0 +1,64 @@
+title WATCHDOG
+
+
+participant user process#lightblue
+participant wd.so#lightblue
+participant usr.thread#lightblue
+participant wd.out#lightblue
+
+activate user process
+user process->*wd.so:start watchdog
+deactivate user process
+rbox over wd.so #orange:scheduler create\nsignal handler init
+wd.so->*usr.thread:thread created
+wd.so->*wd.out:      fork()\n    exec(wd.out)
+
+
+note over usr.thread #yellow:sem_wait\nwaiting wd preparations
+rbox over usr.thread #lightgreen:scheduler run
+
+wd.out-#00ff00:4>wd.out:operator flag (wd
+)
+
+rbox over wd.out #orange:scheduler create\nsignal handler init
+note over wd.out#yellow:sem_post\nready for ping-pong
+
+rbox over wd.out#lightgreen:scheduler run
+
+user process<-wd.out:continue User Process execution
+
+activate user process
+
+loop #ff00ff counters check: counter < N
+
+
+opt Thread
+usr.thread<--wd.out:sending SIGUSR1\nthread_counter += 1
+end 
+rbox over wd.out #lightyellow:wd_counter = 0
+opt Watchdog
+wd.out<--usr.thread:sending SIGUSR1\nwd_counter += 1
+end 
+
+
+rbox over usr.thread #lightyellow:thread_counter = 0
+end 
+
+
+user process-#red>wd.so:stop watchdog
+
+
+
+deactivate user process
+
+wd.so--#red>usr.thread:stop watchdog
+
+rbox over usr.thread#red:sending SIGUSR2
+
+usr.thread--#steelblue>wd.out:stop watchdog
+
+
+rbox over wd.out #steelblue:cleaning up
+user process<#steelblue-wd.out:terminating thread
+
+activate user process
